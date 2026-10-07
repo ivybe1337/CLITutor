@@ -25,7 +25,7 @@ pub const Sandbox = struct {
     pub fn init(allocator: std.mem.Allocator, template_dir: []const u8) !Sandbox {
         const pid = std.c.getpid();
         var buf: [256]u8 = undefined;
-        const target_path = try std.fmt.bufPrint(&buf, "/tmp/clitutor_sb_{d}", .{pid});
+        const target_path = try std.fmt.bufPrint(&buf, "/tmp/clit_sb_{d}", .{pid});
         const owned_path = try allocator.dupe(u8, target_path);
 
         // Perform instant Copy-on-Write directory snapshot
@@ -79,7 +79,7 @@ pub const REMOVEFILE_RECURSIVE: u32 = 1 << 0;
 
 pub fn cleanupDirectory(dir_path: []const u8) void {
     // Delete sandbox directory tree safely via Darwin kernel removefile
-    if (builtin.target.os.tag == .macos) {
+    if (builtin.os.tag == .macos) {
         var path_z: [1024:0]u8 = undefined;
         if (dir_path.len < path_z.len) {
             @memcpy(path_z[0..dir_path.len], dir_path);

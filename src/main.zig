@@ -7,10 +7,11 @@ const lexer = root.lexer;
 const verify = root.verify;
 const buffer = root.buffer;
 const renderer = root.renderer;
+const guides = root.guides;
 
 const BANNER =
-    \\  ____ _     ___ _____ utor
-    \\ / ___| |   |_ _|_   _|   
+    \\  ____ _     ___ _____ 
+    \\ / ___| |   |_ _|_   _|
     \\| |   | |    | |  | |  
     \\| |___| |___ | |  | |  
     \\ \____|_____|___| |_|   ZERO-OVERHEAD KERNEL ENGINE
@@ -39,15 +40,15 @@ pub fn main(init: std.process.Init) !void {
         try printUsage();
     } else if (std.mem.eql(u8, subcmd, "preview") or std.mem.eql(u8, subcmd, "p")) {
         if (args.len < 3) {
-            std.debug.print("Usage: clitutor preview <command>\nExample: clitutor preview 'tar -czf archive.tar.gz src/'\n", .{});
+            std.debug.print("Usage: clit preview <command>\nExample: clit preview 'tar -czf archive.tar.gz src/'\n", .{});
             return;
         }
         try runPreview(allocator, args[2..]);
     } else if (std.mem.eql(u8, subcmd, "why")) {
         try runWhy(allocator);
-    } else if (std.mem.eql(u8, subcmd, "guide") or std.mem.eql(u8, subcmd, "dummy") or std.mem.eql(u8, subcmd, "man")) {
+    } else if (std.mem.eql(u8, subcmd, "guide") or std.mem.eql(u8, subcmd, "dummy") or std.mem.eql(u8, subcmd, "--dummy") or std.mem.eql(u8, subcmd, "--dumbass") or std.mem.eql(u8, subcmd, "man")) {
         if (args.len < 3) {
-            std.debug.print("Usage: clitutor guide <tool>\nAvailable: torch, llamacpp, colab, modal, kaggle, git, aws, zig, cargo, swift, uv, bun, brew, claude, codex, gemini\n", .{});
+            guides.printGuideDirectory();
             return;
         }
         try runGuide(args[2]);
@@ -56,6 +57,8 @@ pub fn main(init: std.process.Init) !void {
     } else if (std.mem.eql(u8, subcmd, "drill")) {
         const scenario = if (args.len >= 3) args[2] else "tar_omission";
         try runDrill(allocator, scenario);
+    } else if (guides.findGuide(subcmd)) |g| {
+        guides.displayGuide(g.content);
     } else {
         std.debug.print("Unknown command: {s}\n", .{subcmd});
         try printUsage();
@@ -65,18 +68,24 @@ pub fn main(init: std.process.Init) !void {
 fn printUsage() !void {
     std.debug.print("{s}\n", .{BANNER});
     std.debug.print(
+        \\Usage: clit <command|tool> [arguments]
+        \\
         \\Commands:
+        \\  repl            Interactive PTY shell inside APFS copy-on-write sandbox
+        \\  guide [tool]    View beginner-friendly manuals (torch, git, uv, colab, modal, etc.)
         \\  preview <cmd>   Ghost Mode Pre-Flight Simulator (Runs inside instant CoW sandbox)
         \\  why             Diagnose failed command syntax & kernel error state
-        \\  repl            Interactive PTY shell inside APFS copy-on-write sandbox
         \\  drill <name>    Run deterministic kernel invariant verification drills
-        \\  guide <tool>    View beginner-friendly manuals (torch, git, uv, colab, modal, etc.)
+        \\
+        \\Direct Guide Access:
+        \\  clit <tool>     Quickly read guide for any supported tool (e.g., 'clit torch', 'clit uv')
         \\
         \\Drill Scenarios:
         \\  tar_omission    Verify in-memory tar creation without leaking sensitive files
         \\  perm_lock       Verify file mode bits and kernel invariants
         \\
     , .{});
+    guides.printGuideDirectory();
 }
 
 fn getCwd(buf: []u8) ![]const u8 {
@@ -156,7 +165,7 @@ fn runPreview(allocator: std.mem.Allocator, cmd_args: []const []const u8) !void 
             null,
         };
         const envp = [_:null]?[*:0]const u8{
-            "CLITUTOR_SANDBOX=1",
+            "CLIT_SANDBOX=1",
             null,
         };
         _ = std.c.execve(shell, &argv, &envp);
@@ -182,7 +191,7 @@ fn runWhy(_: std.mem.Allocator) !void {
     std.debug.print(
         \\🔍 [Exit Code Interceptor / Why Diagnosis]
         \\   Status: Clean kernel state.
-        \\   Tip: In bash/zsh, use 'clitutor preview <cmd>' before running destructive commands.
+        \\   Tip: In bash/zsh, use 'clit preview <cmd>' before running destructive commands.
         \\
     , .{});
 }
@@ -206,38 +215,12 @@ fn runDrill(allocator: std.mem.Allocator, scenario: []const u8) !void {
     }
 }
 
-pub extern "c" fn execvp(file: [*:0]const u8, argv: [*:null]const ?[*:0]const u8) c_int;
-
 fn runGuide(tool_name: []const u8) !void {
-    var filename_buf: [128:0]u8 = undefined;
-    const slice = std.fmt.bufPrint(filename_buf[0 .. filename_buf.len - 1], "guides/{s}.md", .{tool_name}) catch return;
-    filename_buf[slice.len] = 0;
-    const filename_z = filename_buf[0..slice.len :0];
-
-    // Check if file exists in guides/
-    var stat_buf: std.posix.Stat = undefined;
-    if (std.c.stat(filename_z.ptr, &stat_buf) != 0) {
-        std.debug.print("Guide not found for '{s}'. Check available guides in guides/\n", .{tool_name});
-        return;
-    }
-
-    // Use bat or less to render
-    const argv = [_:null]?[*:0]const u8{
-        "bat",
-        "--paging=always",
-        "--style=plain",
-        filename_z.ptr,
-        null,
-    };
-    if (execvp("bat", &argv) != 0) {
-        // Fallback to less
-        const less_argv = [_:null]?[*:0]const u8{
-            "less",
-            "-R",
-            filename_z.ptr,
-            null,
-        };
-        _ = execvp("less", &less_argv);
+    if (guides.findGuide(tool_name)) |g| {
+        guides.displayGuide(g.content);
+    } else {
+        std.debug.print("Guide not found for '{s}'.\n", .{tool_name});
+        guides.printGuideDirectory();
     }
 }
 
@@ -245,20 +228,13 @@ fn runRepl(allocator: std.mem.Allocator) !void {
     var cwd_buf: [std.fs.max_path_bytes]u8 = undefined;
     const current_dir = try getCwd(&cwd_buf);
 
-    std.debug.print("⚡ Initializing Sandbox PTY...\n", .{});
+    std.debug.print("⚡ Initializing Sandbox PTY inside {s}...\n", .{current_dir});
+    std.debug.print("🔒 APFS CoW snapshot active: modifications are completely isolated.\n", .{});
     var sandbox = try cow.Sandbox.init(allocator, current_dir);
     defer sandbox.deinit();
 
     var pty_session = try pty.PtySession.spawn(sandbox.path, null);
     defer pty_session.deinit();
 
-    try pty_session.enableRawMode();
-
-    // Forward terminal I/O
-    var buffer_io: [4096]u8 = undefined;
-    while (true) {
-        const n = std.c.read(pty_session.master_fd, &buffer_io, buffer_io.len);
-        if (n <= 0) break;
-        _ = std.c.write(1, &buffer_io, @as(usize, @intCast(n)));
-    }
+    try pty_session.runInteractive();
 }

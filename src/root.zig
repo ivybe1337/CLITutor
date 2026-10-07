@@ -5,6 +5,7 @@ pub const lexer = @import("syntax/lexer.zig");
 pub const verify = @import("verify.zig");
 pub const buffer = @import("ui/buffer.zig");
 pub const renderer = @import("ui/renderer.zig");
+pub const guides = @import("guides.zig");
 
 test {
     _ = cow;
@@ -14,4 +15,5 @@ test {
     _ = verify;
     _ = buffer;
     _ = renderer;
+    _ = guides;
 }
