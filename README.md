@@ -7,7 +7,7 @@
   / ___| |   |_ _|_   _|   
  | |   | |    | |  | |     
  | |___| |___ | |  | |     
-              \____|_____|___| |_| ZERO-OVERHEAD KERNEL ENGINE
+                   \____|_____|___| |_| ZERO-OVERHEAD KERNEL ENGINE
 ```
 
 ### 🔮 *A Complete CLITorial for Advanced Terminal Operations* 
