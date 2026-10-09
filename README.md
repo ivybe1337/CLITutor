@@ -7,12 +7,12 @@
   / ___| |   |_ _|_   _|   
  | |   | |    | |  | |     
  | |___| |___ | |  | |     
-  \____|_____|___| |_|   ZERO-OVERHEAD KERNEL ENGINE
+                        \____|_____|___| |_| ZERO-OVERHEAD KERNEL ENGINE
 ```
 
-### 🔮 *A Complete CLITorial for Advanced Terminal & Agentic Operations*
+### 🔮 *A Complete CLITorial for Advanced Terminal Operations* 
 
-> **"Finally, a zero-overhead kernel engine to eliminate the ambiguity, cognitive fatigue, and footguns of modern CLI tooling—once and for all."**
+> **"Eliminate the ambiguity, cognitive fatigue, and footguns of modern CLI tooling—once and for all."**
 
 ---
 
